@@ -230,3 +230,42 @@ ggplot(df_plot, aes(x = Factor, y = RI, fill = Factor)) +
   geom_boxplot() + theme_bw() + theme(panel.grid.major = element_blank()) + 
   scale_fill_brewer(palette="Set2") + ylab("Overall Relative Importance (%)")
 graphics.off()
+
+
+png("Species_raw.png", width = 7, height = 7)
+
+names(Data)
+df = cbind(Data[,c("Exposure", "time.point")],Y)
+
+df <- melt(df, id.vars = c("Exposure","time.point"), variable.name = "Species")
+
+df$variable = factor(df$variable, levels = c("C1", "C2", "C5", "C6", "C7", "C10", "C13", "C14"))
+
+
+
+df$set = factor(df$Species)
+df$Time = factor(df$time.point)
+
+levels(df$set)
+levels(df$set) <- c(1,1,1,2,2,2)
+
+df$value = log10(df$value)
+
+ggplot(df, aes(x = Time, y = value, fill = Exposure)) +
+  geom_boxplot(alpha=0.5) + theme_bw() + theme(panel.grid.major = element_blank()) +  
+  scale_fill_brewer(palette="Set2") + facet_wrap( set ~ Species) +
+  geom_jitter(size=0.6, alpha=0.5, width = 0.1)
+
+graphics.off()
+
+library(mvabund)
+Ya = mvabund(Y)
+
+Data$Time = factor(Data$time.point)
+
+X = as.data.frame(model.matrix(~ Exposure * time.point, Data)[,-1])
+head(X)
+tas.nb <- manyglm(Ya ~ X$ExposureE + X$time.point + X$`ExposureE:time.point`, family = "negative.binomial")
+
+anova(tas.nb, p.uni= "adjusted", test = "LR" )
+
